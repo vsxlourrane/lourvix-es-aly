@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards · El Tardeo en Madrid · Lourvix</title>
+<style>
+  :root{
+    --bg:#0f0f0e;
+    --surface:#1a1a18;
+    --surface-2:#232320;
+    --copper:#B7794A;
+    --copper-light:#D4A574;
+    --copper-dark:#8A5733;
+    --ivory:#F3F0E8;
+    --ivory-2:#FAF8F3;
+    --stone:#A69C8A;
+    --stone-2:#C9C0B0;
+    --green:#2a9d8f;
+    --green-soft:#1d6f66;
+    --red:#c1121f;
+    --gold:#e9a23b;
+    --ink:#111110;
+    --line:rgba(243,240,232,.10);
+    --line-strong:rgba(243,240,232,.18);
+    --shadow:0 20px 50px rgba(0,0,0,.4);
+    --radius:22px;
+    --radius-sm:14px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--ivory);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:80px;
+  }
+
+  /* Fundo decorativo */
+  .bg-glow{
+    position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .bg-glow .g{
+    position:absolute; border-radius:50%; filter:blur(100px);
+  }
+  .bg-glow .g1{width:600px;height:600px;background:radial-gradient(circle,rgba(183,121,74,.12),transparent 70%);top:-200px;left:-160px;}
+  .bg-glow .g2{width:500px;height:500px;background:radial-gradient(circle,rgba(42,157,143,.08),transparent 70%);bottom:-200px;right:-140px;}
+
+  /* Container */
+  .wrap{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 22px;}
+
+  /* Header */
+  .header{
+    padding:34px 0 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  .brand .logo{
+    width:40px;height:40px;border-radius:12px;
+    background:linear-gradient(135deg,var(--copper),var(--copper-dark));
+    display:grid;place-items:center;
+    box-shadow:0 6px 18px rgba(183,121,74,.35);
+    font-weight:900;font-size:18px;color:var(--ink);
+  }
+  .brand strong{font-size:15px;font-weight:800;letter-spacing:.4px;display:block;line-height:1.1;}
+  .brand small{font-size:11px;color:var(--stone);letter-spacing:2px;text-transform:uppercase;font-weight:600;}
+
+  .badge-route{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(183,121,74,.13);
+    border:1px solid rgba(183,121,74,.4);
+    color:var(--copper-light);
+    padding:7px 16px;border-radius:999px;
+    font-size:12px;font-weight:700;
+  }
+  .badge-route .dot{
+    width:7px;height:7px;border-radius:50%;background:var(--copper);
+    box-shadow:0 0 0 4px rgba(183,121,74,.2);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.25);opacity:.7;}}
+
+  /* Section title */
+  .section-head{
+    margin:36px 0 18px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .section-head .num{
+    font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--copper);
+  }
+  .section-head h2{
+    font-size:clamp(20px,3.2vw,28px);font-weight:800;letter-spacing:-.6px;line-height:1.15;
+    color:var(--ivory);
+  }
+  .section-head .sub{
+    font-size:13px;color:var(--stone);margin-top:2px;
+  }
+  .section-head .line{
+    flex:1;height:1px;background:var(--line);margin-left:8px;
+  }
+
+  /* ============================================================
+     FLASHCARDS
+     ============================================================ */
+  .flash-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:16px;
+    margin-top:8px;
+  }
+
+  .flashcard{
+    perspective:1200px;
+    height:280px;
+    cursor:pointer;
+    min-width:0;
+  }
+
+  .flashcard-inner{
+    position:relative;
+    width:100%;height:100%;
+    transition:transform .65s cubic-bezier(.22,1,.36,1);
+    transform-style:preserve-3d;
+  }
+
+  .flashcard.flipped .flashcard-inner{
+    transform:rotateY(180deg);
+  }
+
+  .flash-face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    border-radius:var(--radius);
+    padding:24px 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    overflow:hidden;
+    border:1px solid var(--line-strong);
+    box-shadow:var(--shadow);
+    min-width:0;
+  }
+
+  .flash-front{
+    background:linear-gradient(160deg,var(--surface),var(--surface-2));
+  }
+  .flash-front::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--copper),var(--copper-light));
+  }
+
+  .flash-back{
+    background:linear-gradient(160deg,#1e1e1a,#252520);
+    transform:rotateY(180deg);
+    border-color:rgba(183,121,74,.35);
+  }
+  .flash-back::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--green),var(--green-soft));
+  }
+
+  .flash-lang{
+    font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--copper);margin-bottom:12px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .flash-lang .flag{font-size:14px;}
+
+  .flash-text{
+    font-size:15px;line-height:1.5;
+    font-weight:500;
+    color:var(--ivory);
+    overflow-wrap:break-word;word-wrap:break-word;
+    hyphens:auto;
+    flex:1;
+  }
+  .flash-front .flash-text{
+    font-style:italic;
+    color:#e8e2d6;
+  }
+  .flash-back .flash-text{
+    color:var(--ivory-2);
+    font-weight:500;
+  }
+
+  .flash-hint{
+    font-size:11px;color:var(--stone);font-weight:600;
+    display:flex;align-items:center;gap:6px;
+    margin-top:12px;
+    opacity:.7;
+  }
+
+  .flash-index{
+    position:absolute;top:18px;right:20px;
+    font-size:11px;font-weight:800;
+    color:var(--stone);opacity:.5;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ============================================================
+     ATENCIÓN CRÍTICA · QUIZ
+     ============================================================ */
+  .quiz-intro{
+    background:linear-gradient(160deg,var(--surface),var(--surface-2));
+    border:1px solid var(--line-strong);
+    border-radius:var(--radius);
+    padding:28px 26px;
+    margin-bottom:22px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .quiz-intro::before{
+    content:"";position:absolute;top:-50px;right:-50px;
+    width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle,rgba(183,121,74,.18),transparent 70%);
+  }
+  .quiz-intro .label{
+    font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+    color:var(--copper);margin-bottom:10px;
+  }
+  .quiz-intro h3{
+    font-size:clamp(18px,2.8vw,24px);font-weight:800;letter-spacing:-.5px;
+    margin-bottom:10px;color:var(--ivory);
+    position:relative;z-index:1;
+  }
+  .quiz-intro p{
+    font-size:14px;color:var(--stone);line-height:1.6;
+    max-width:70ch;position:relative;z-index:1;
+  }
+  .quiz-intro p strong{color:var(--copper-light);}
+
+  .score-board{
+    display:flex;align-items:center;gap:12px;
+    margin-top:18px;position:relative;z-index:1;
+    flex-wrap:wrap;
+  }
+  .score-pill{
+    background:rgba(183,121,74,.13);
+    border:1px solid rgba(183,121,74,.35);
+    color:var(--copper-light);
+    padding:8px 18px;border-radius:999px;
+    font-size:13px;font-weight:800;
+    display:flex;align-items:center;gap:8px;
+  }
+  .score-pill .big{
+    font-size:18px;color:var(--ivory);
+    font-variant-numeric:tabular-nums;
+  }
+  .score-pill.total{
+    background:rgba(243,240,232,.06);
+    border-color:var(--line-strong);
+    color:var(--stone);
+  }
+
+  .quiz-progress-track{
+    height:6px;border-radius:99px;
+    background:rgba(243,240,232,.08);
+    margin-top:16px;overflow:hidden;
+    position:relative;z-index:1;
+  }
+  .quiz-progress-fill{
+    height:100%;width:0%;border-radius:99px;
+    background:linear-gradient(90deg,var(--copper),var(--copper-light));
+    transition:width .4s cubic-bezier(.22,1,.36,1);
+  }
+
+  /* Quiz cards */
+  .quiz-list{display:flex;flex-direction:column;gap:16px;}
+
+  .quiz-card{
+    background:linear-gradient(160deg,var(--surface),var(--surface-2));
+    border:1px solid var(--line-strong);
+    border-radius:var(--radius);
+    padding:24px 26px;
+    box-shadow:var(--shadow);
+    transition:border-color .3s;
+    min-width:0;
+  }
+  .quiz-card.correct{border-color:rgba(42,157,143,.5);}
+  .quiz-card.wrong{border-color:rgba(193,18,31,.5);}
+
+  .quiz-card .q-header{
+    display:flex;align-items:center;gap:12px;margin-bottom:14px;
+  }
+  .quiz-card .q-num{
+    width:32px;height:32px;flex:0 0 32px;border-radius:10px;
+    background:linear-gradient(135deg,var(--copper),var(--copper-dark));
+    color:var(--ink);font-weight:900;font-size:14px;
+    display:grid;place-items:center;
+  }
+  .quiz-card .q-label{
+    font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+    color:var(--stone);
+  }
+  .quiz-card .q-text{
+    font-size:15.5px;font-weight:600;line-height:1.5;
+    color:var(--ivory);margin-bottom:16px;
+    overflow-wrap:break-word;word-wrap:break-word;
+  }
+  .quiz-card .q-text em{
+    color:var(--copper-light);font-style:normal;font-weight:700;
+  }
+
+  .options{display:flex;flex-direction:column;gap:9px;}
+
+  .option{
+    display:flex;align-items:flex-start;gap:12px;
+    background:rgba(243,240,232,.04);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    cursor:pointer;
+    transition:.2s;
+    font-size:14px;line-height:1.45;
+    color:var(--ivory);
+    text-align:left;
+    font-family:inherit;
+    width:100%;
+    min-width:0;
+    overflow-wrap:break-word;word-wrap:break-word;
+  }
+  .option:hover:not(.disabled){
+    background:rgba(183,121,74,.08);
+    border-color:rgba(183,121,74,.4);
+  }
+  .option .letter{
+    width:26px;height:26px;flex:0 0 26px;border-radius:8px;
+    background:rgba(243,240,232,.08);
+    display:grid;place-items:center;
+    font-size:12px;font-weight:800;
+    color:var(--stone);
+    transition:.2s;
+  }
+  .option.selected .letter{
+    background:var(--copper);color:var(--ink);
+  }
+  .option.correct{
+    background:rgba(42,157,143,.12);
+    border-color:var(--green);
+  }
+  .option.correct .letter{
+    background:var(--green);color:#fff;
+  }
+  .option.wrong{
+    background:rgba(193,18,31,.1);
+    border-color:var(--red);
+  }
+  .option.wrong .letter{
+    background:var(--red);color:#fff;
+  }
+  .option.disabled{cursor:default;opacity:.85;}
+
+  .feedback{
+    margin-top:12px;
+    padding:12px 16px;
+    border-radius:12px;
+    font-size:13.5px;line-height:1.5;
+    display:none;
+    overflow-wrap:break-word;word-wrap:break-word;
+  }
+  .feedback.show{display:block;}
+  .feedback.ok{
+    background:rgba(42,157,143,.1);
+    border:1px solid rgba(42,157,143,.35);
+    color:#a8e6dd;
+  }
+  .feedback.no{
+    background:rgba(193,18,31,.08);
+    border:1px solid rgba(193,18,31,.3);
+    color:#f4b8b8;
+  }
+  .feedback strong{font-weight:800;}
+
+  /* Resultado final */
+  .final-result{
+    display:none;
+    background:linear-gradient(160deg,#1e1e1a,#252520);
+    border:1.5px solid rgba(183,121,74,.4);
+    border-radius:var(--radius);
+    padding:34px 30px;
+    text-align:center;
+    margin-top:22px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);
+    position:relative;overflow:hidden;
+  }
+  .final-result.show{display:block;}
+  .final-result::after{
+    content:"";position:absolute;top:-60px;right:-60px;
+    width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle,rgba(233,162,59,.3),transparent 70%);
+  }
+  .final-result .emoji{font-size:56px;line-height:1;margin-bottom:12px;display:inline-block;}
+  .final-result h3{
+    font-size:clamp(22px,3.5vw,32px);font-weight:800;letter-spacing:-.8px;
+    margin-bottom:8px;
+    background:linear-gradient(120deg,var(--copper-light),var(--copper));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    position:relative;z-index:1;
+  }
+  .final-result .pts{
+    font-size:clamp(36px,6vw,56px);font-weight:900;
+    color:var(--ivory);line-height:1;margin-bottom:6px;
+    font-variant-numeric:tabular-nums;
+    position:relative;z-index:1;
+  }
+  .final-result .pts small{font-size:20px;color:var(--stone);font-weight:700;}
+  .final-result p{
+    font-size:14.5px;color:var(--stone);max-width:50ch;margin:0 auto;
+    position:relative;z-index:1;
+  }
+
+  .btn-reset{
+    margin-top:20px;
+    background:linear-gradient(135deg,var(--copper),var(--copper-dark));
+    color:var(--ink);border:none;border-radius:12px;
+    padding:12px 28px;font-size:14px;font-weight:800;
+    cursor:pointer;font-family:inherit;
+    transition:.2s;position:relative;z-index:1;
+    box-shadow:0 8px 20px rgba(183,121,74,.3);
+  }
+  .btn-reset:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(183,121,74,.4);}
+
+  /* ============================================================
+     VOCABULÁRIO
+     ============================================================ */
+  .vocab-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:14px;
+    margin-top:8px;
+  }
+  .vocab-card{
+    background:linear-gradient(160deg,var(--surface),var(--surface-2));
+    border:1px solid var(--line-strong);
+    border-radius:var(--radius-sm);
+    padding:20px 20px;
+    box-shadow:var(--shadow);
+    transition:.25s;
+    min-width:0;
+  }
+  .vocab-card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(183,121,74,.4);
+  }
+  .vocab-card .term{
+    font-size:16px;font-weight:800;letter-spacing:-.3px;
+    color:var(--copper-light);margin-bottom:6px;
+    overflow-wrap:break-word;word-wrap:break-word;
+  }
+  .vocab-card .def{
+    font-size:13.5px;color:var(--stone);line-height:1.55;
+    overflow-wrap:break-word;word-wrap:break-word;
+  }
+  .vocab-card .def strong{color:var(--ivory);font-weight:700;}
+
+  /* ============================================================
+     RESPONSIVO
+     ============================================================ */
+  @media (max-width:720px){
+    .wrap{padding:0 16px;}
+    .header{padding:24px 0 14px;}
+    .badge-route{font-size:11px;padding:6px 12px;}
+    .flash-grid{grid-template-columns:1fr;}
+    .flashcard{height:260px;}
+    .quiz-card{padding:20px 18px;}
+    .option{padding:12px 14px;font-size:13.5px;}
+    .vocab-grid{grid-template-columns:1fr;}
+    .section-head h2{font-size:20px;}
+  }
+
+  @media (max-width:480px){
+    .brand strong{font-size:13px;}
+    .brand small{font-size:9.5px;letter-spacing:1.6px;}
+    .flash-text{font-size:14px;}
+    .quiz-intro{padding:22px 18px;}
+    .final-result{padding:26px 18px;}
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-glow" aria-hidden="true">
+  <div class="g g1"></div>
+  <div class="g g2"></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="brand">
+      <div class="logo">X</div>
+      <div>
+        <strong>LOURVIX · EL TARDEO EN MADRID</strong>
+        <small>Flashcards + Atención Crítica</small>
+      </div>
+    </div>
+    <div class="badge-route" role="status">
+      <span class="dot" aria-hidden="true"></span>
+      <span>Inmersión Activa · Español en Acción</span>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       01 · FLASHCARDS
+       ============================================================ -->
+  <div class="section-head">
+    <span class="num">01</span>
+    <h2>Flashcards · Frases de Apertura</h2>
+    <span class="line" aria-hidden="true"></span>
+  </div>
+  <p style="font-size:13.5px;color:var(--stone);margin-bottom:16px;">
+    Clique em cada carta para virar e ver a tradução em português. Use estas frases como base para abordagens naturais e respeitosas.
+  </p>
+
+  <div class="flash-grid" id="flashGrid"></div>
+
+  <!-- ============================================================
+       07 · ATENCIÓN CRÍTICA
+       ============================================================ -->
+  <div class="section-head" style="margin-top:52px;">
+    <span class="num">07</span>
+    <h2>Atención Crítica</h2>
+    <span class="line" aria-hidden="true"></span>
+  </div>
+  <p style="font-size:13.5px;color:var(--stone);margin-bottom:16px;">
+    Situación hipotética: tu cerebro en tensión real.
+  </p>
+
+  <div class="quiz-intro">
+    <div class="label">El Tardeo en Madrid</div>
+    <h3>¿Puedes distinguir lo natural de lo forzado?</h3>
+    <p>
+      Alyson está en una terraza en Madrid con sus amigos. En la mesa de al lado, hay un grupo de chicas. Él decide acercarse a Sofía con una excusa simpática. A continuación, seis situaciones reales de este escenario.
+    </p>
+    <p style="margin-top:10px;">
+      <strong>Cada respuesta correcta vale 100 puntos. Total: 600 puntos.</strong>
+    </p>
+
+    <div class="score-board">
+      <div class="score-pill">
+        <span>Puntos:</span>
+        <span class="big" id="scoreDisplay">0</span>
+      </div>
+      <div class="score-pill total">
+        <span>Total posible: <span class="big">600</span></span>
+      </div>
+      <div class="score-pill" id="answeredPill" style="display:none;">
+        <span>Respondidas:</span>
+        <span class="big" id="answeredDisplay">0</span><span>/6</span>
+      </div>
+    </div>
+
+    <div class="quiz-progress-track">
+      <div class="quiz-progress-fill" id="quizProgress"></div>
+    </div>
+  </div>
+
+  <div class="quiz-list" id="quizList"></div>
+
+  <div class="final-result" id="finalResult">
+    <div class="emoji" id="finalEmoji">🏆</div>
+    <h3 id="finalTitle">¡Lo lograste!</h3>
+    <div class="pts"><span id="finalScore">0</span><small> / 600</small></div>
+    <p id="finalMessage"></p>
+    <button class="btn-reset" id="btnReset">↺ Intentar de nuevo</button>
+  </div>
+
+  <!-- ============================================================
+       VOCABULÁRIO
+       ============================================================ -->
+  <div class="section-head" style="margin-top:52px;">
+    <span class="num">08</span>
+    <h2>Vocabulario y Cultura</h2>
+    <span class="line" aria-hidden="true"></span>
+  </div>
+  <p style="font-size:13.5px;color:var(--stone);margin-bottom:16px;">
+    Expresiones clave para sonar natural en España.
+  </p>
+
+  <div class="vocab-grid">
+    <div class="vocab-card">
+      <div class="term">Majo / Maja</div>
+      <div class="def">Alguien <strong>legal, simpático o agradable</strong>. Si ella te dice que eres "majo", es un buenísimo signo.</div>
+    </div>
+    <div class="vocab-card">
+      <div class="term">Tener un rollazo</div>
+      <div class="def">Tener <strong>mucho estilo, una vibe auténtica y atractiva</strong>. Es un elogio moderno muy usado en España.</div>
+    </div>
+    <div class="vocab-card">
+      <div class="term">Guapa</div>
+      <div class="def">En España se usa <strong>a diario y con naturalidad</strong> (hasta el panadero). Con respeto, no suena agresivo.</div>
+    </div>
+    <div class="vocab-card">
+      <div class="term">Tú vs. Usted</div>
+      <div class="def">En España usa <strong>siempre "tú"</strong> con desconocidos de tu edad. "Usted" crea una distancia formal innecesaria para ligar.</div>
+    </div>
+    <div class="vocab-card">
+      <div class="term">Quedar para tomar algo</div>
+      <div class="def">La forma <strong>canónica de proponer un plan</strong> en España: "¿Quedamos para tomar algo?" = "Vamos tomar algo?"</div>
+    </div>
+    <div class="vocab-card">
+      <div class="term">Vacilar</div>
+      <div class="def">Bromear de forma sana, <strong>tomar el pelo con cariño</strong>. Es la base del humor y del coqueteo español.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   1. FLASHCARDS DATA
+   ============================================================ */
+const FLASHCARDS = [
+  {
+    id: 1,
+    es: "¡Hola! Perdona, es que te he visto de lejos y me ha parecido que tenías un rollazo increíble. Quería venir a saludarte. ¿Cómo te llamas?",
+    pt: "Oi! Desculpa, é que te vi de longe e achei que você tem um estilo/vibe incrível. Quis vir te dar um oi. Como você se chama?"
+  },
+  {
+    id: 2,
+    es: "¡Hola! Qué bien bailas. Me llamo Alyson! ¿cómo te llamas tú?",
+    pt: "Oi! Que bem você dança. Me chamo Alyson! Como você se chama?"
+  },
+  {
+    id: 3,
+    es: "¡Hola! Qué guapa estás hoy. El ambiente aquí está genial, ¿verdad? ¿Vienes mucho por esta zona?",
+    pt: "Oi! Como você está linda hoje. O ambiente aqui está ótimo, né? Você vem muito por esta região?"
+  },
+  {
+    id: 4,
+    es: "¡Hola! Mis amigos y yo estamos debatiendo si la música de este sitio es buenísima o un poco antigua. ¿Tú qué opinas?",
+    pt: "Oi! Meus amigos e eu estamos debatendo se a música desse lugar é maravilhosa ou um pouco antiga. O que você acha?"
+  },
+  {
+    id: 5,
+    es: "¡Hola! Soy nuevo por aquí y estoy un poco perdido... pero no solo con las calles, también con lo guapa que eres. ¿Me recomiendas algún sitio chulo para tomar algo por aquí?",
+    pt: "Oi! Sou novo por aqui e estou um pouco perdido... mas não só com as ruas, também com o quão linda você é. Me recomenda algum lugar legal para tomar algo por aqui?"
+  },
+  {
+    id: 6,
+    es: "¡Hola! Estoy practicando mi español, ¿me das cinco minutos de conversación si te invito a un café?",
+    pt: "Oi! Estou praticando meu espanhol, me dá cinco minutos de conversa se eu te pagar um café?"
+  }
+];
+
+/* Render flashcards */
+const flashGrid = document.getElementById('flashGrid');
+FLASHCARDS.forEach((fc, i) => {
+  const card = document.createElement('div');
+  card.className = 'flashcard';
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('aria-label', 'Flashcard ' + (i + 1) + ': clique para virar');
+  card.innerHTML = `
+    <div class="flashcard-inner">
+      <div class="flash-face flash-front">
+        <span class="flash-index">${String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <div class="flash-lang"><span class="flag">🇪🇸</span> Español</div>
+          <div class="flash-text">${fc.es}</div>
+        </div>
+        <div class="flash-hint">👆 Clique para ver a tradução</div>
+      </div>
+      <div class="flash-face flash-back">
+        <span class="flash-index">${String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <div class="flash-lang"><span class="flag">🇧🇷</span> Português</div>
+          <div class="flash-text">${fc.pt}</div>
+        </div>
+        <div class="flash-hint">👆 Clique para voltar</div>
+      </div>
+    </div>
+  `;
+  const toggle = () => {
+    card.classList.toggle('flipped');
+  };
+  card.addEventListener('click', toggle);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggle();
+    }
+  });
+  flashGrid.appendChild(card);
+});
+
+/* ============================================================
+   2. QUIZ DATA
+   ============================================================ */
+const QUIZ = [
+  {
+    id: 1,
+    context: "Romper el hielo",
+    question: "Alyson quiere acercarse a Sofía pero necesita una excusa natural. ¿Cuál de estas frases suena más <em>natural y española</em>?",
+    options: [
+      "Disculpe, señorita, ¿podría usted indicarme si esta silla está libre?",
+      "Oye, perdona... Es que estamos debatiendo en mi mesa y necesitamos la opinión de expertas. ¿Estas son las mejores bravas del barrio o nos han timado?",
+      "Hola. ¿Está libre esta silla? Es para sentarme.",
+      "Perdóneme, ¿le importaría si me siento aquí? Es que estoy muy cansado."
+    ],
+    correct: 1,
+    feedbackOk: "¡Exacto! En España, el coqueteo natural usa <strong>humor y una excusa tonta pero simpática</strong>. La frase de las bravas es perfecta: crea complicidad sin ser formal.",
+    feedbackNo: "Cuidado con la formalidad. En España, usar <strong>«usted» con alguien de tu edad crea una distancia innecesaria</strong> para ligar. La opción B usa humor y una excusa natural, que es la clave del coqueteo español."
+  },
+  {
+    id: 2,
+    context: "El cumplido natural",
+    question: "Sofía le responde riéndose. Alyson quiere hacerle un cumplido de forma natural. ¿Cuál de estas frases suena <em>más española</em>?",
+    options: [
+      "Eres muy guapa. Me gustas mucho.",
+      "Qué bien bailas. Me llamo Alyson, ¿cómo te llamas tú?",
+      "Eres la chica más hermosa que he visto en mi vida.",
+      "Tu belleza es impresionante, deberías ser modelo."
+    ],
+    correct: 1,
+    feedbackOk: "¡Perfecto! En España, el cumplido natural <strong>no es exagerado ni cursi</strong>. «Qué bien bailas» es un halago espontáneo y real, no un piropo forzado.",
+    feedbackNo: "En España, los cumplidos exagerados suenan <strong>falsos o intensos</strong>. La opción B es la más natural: un halago espontáneo sobre algo que ella hace, no sobre su apariencia de forma exagerada."
+  },
+  {
+    id: 3,
+    context: "Proponer el plan",
+    question: "Después de una buena conversación, Alyson quiere pedirle el contacto a Sofía. ¿Cuál de estas opciones suena <em>más natural en España</em>?",
+    options: [
+      "¿Me das tu número de teléfono para llamarte?",
+      "¿Te apetece que apuntemos los teléfonos y nos tomamos algo un día en el bar ese de las bravas buenas?",
+      "¿Podemos intercambiar información de contacto?",
+      "Dame tu Instagram, por favor."
+    ],
+    correct: 1,
+    feedbackOk: "¡Genial! <strong>«¿Te apetece que...?»</strong> es la forma más natural de proponer un plan en España. Además, incluye un plan concreto: volver al bar de las bravas buenas.",
+    feedbackNo: "En España, pedir el contacto directamente suena <strong>demasiado brusco</strong>. Lo natural es proponer un plan concreto con «¿Te apetece...?». La opción B es la más fluida y natural."
+  },
+  {
+    id: 4,
+    context: "El momento de retirarse",
+    question: "Los amigos de ambos están esperando. ¿Qué debería hacer Alyson para no ser pesado?",
+    options: [
+      "Quedarse hablando hasta que Sofía se aburra.",
+      "Despedirse amablemente y volver con sus amigos, sin alargar demasiado.",
+      "Pedirle a Sofía que se venga con él y sus amigos.",
+      "Invitarla a salir en ese mismo momento."
+    ],
+    correct: 1,
+    feedbackOk: "¡Correcto! En España, <strong>no ser pesado es clave</strong>. Alyson se despide con elegancia y propone un plan futuro. Eso demuestra seguridad y respeto.",
+    feedbackNo: "Alargar demasiado el momento <strong>puede resultar pesado</strong>. Lo natural en España es despedirse amablemente, dejar buen sabor de boca y proponer un plan futuro."
+  },
+  {
+    id: 5,
+    context: "Vocabulario cultural",
+    question: "¿Qué significa exactamente <em>«tener un rollazo»</em> en el contexto de un cumplido en España?",
+    options: [
+      "Ser una persona muy aburrida y pesada.",
+      "Tener mucho estilo, una vibe auténtica y atractiva.",
+      "Tener un rollo físico, como grasa corporal.",
+      "Ser demasiado hablador y molesto."
+    ],
+    correct: 1,
+    feedbackOk: "¡Exacto! <strong>«Tener un rollazo»</strong> es un elogio moderno que significa tener mucho estilo y una vibe auténtica. Es un cumplido muy español.",
+    feedbackNo: "Ojo: <strong>«tener un rollazo»</strong> en este contexto es un elogio positivo. Significa tener estilo y una vibe atractiva. La opción A se refiere a «ser un rollazo», que es lo contrario."
+  },
+  {
+    id: 6,
+    context: "Tratamiento y respeto",
+    question: "En España, ¿qué pronombre debería usar Alyson con Sofía, a quien acaba de conocer?",
+    options: [
+      "Usted, para mostrar respeto y cortesía.",
+      "Tú, porque son de la misma edad y el contexto es informal.",
+      "Vos, porque es el estándar en Madrid.",
+      "Ustedes, para incluirla a ella y a sus amigas."
+    ],
+    correct: 1,
+    feedbackOk: "¡Perfecto! En España, se usa <strong>«tú» con desconocidos de la misma edad</strong>, incluso en el primer contacto. «Usted» crearía una distancia formal innecesaria.",
+    feedbackNo: "En España, usar <strong>«usted» con alguien de tu edad en un contexto informal</strong> suena raro y crea distancia. Lo natural es usar «tú» desde el principio."
+  }
+];
+
+/* ============================================================
+   3. QUIZ ENGINE
+   ============================================================ */
+const quizList = document.getElementById('quizList');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const answeredDisplay = document.getElementById('answeredDisplay');
+const answeredPill = document.getElementById('answeredPill');
+const quizProgress = document.getElementById('quizProgress');
+const finalResult = document.getElementById('finalResult');
+const finalScore = document.getElementById('finalScore');
+const finalEmoji = document.getElementById('finalEmoji');
+const finalTitle = document.getElementById('finalTitle');
+const finalMessage = document.getElementById('finalMessage');
+const btnReset = document.getElementById('btnReset');
+
+let totalScore = 0;
+let answeredCount = 0;
+const answeredState = new Array(QUIZ.length).fill(false);
+
+function renderQuiz() {
+  quizList.innerHTML = '';
+  QUIZ.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'quiz-card';
+    card.id = 'quiz-' + qi;
+
+    let optionsHTML = '';
+    const letters = ['A', 'B', 'C', 'D'];
+    q.options.forEach((opt, oi) => {
+      optionsHTML += `
+        <button class="option" data-q="${qi}" data-o="${oi}" aria-label="Opción ${letters[oi]}: ${opt.replace(/<[^>]+>/g, '')}">
+          <span class="letter">${letters[oi]}</span>
+          <span>${opt}</span>
+        </button>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="q-header">
+        <div class="q-num">${q.id}</div>
+        <div class="q-label">${q.context}</div>
+      </div>
+      <div class="q-text">${q.question}</div>
+      <div class="options" role="radiogroup">${optionsHTML}</div>
+      <div class="feedback" id="fb-${qi}"></div>
+    `;
+
+    quizList.appendChild(card);
+  });
+
+  // Event listeners
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => handleAnswer(btn));
+  });
+}
+
+function handleAnswer(btn) {
+  const qi = parseInt(btn.dataset.q);
+  const oi = parseInt(btn.dataset.o);
+
+  if (answeredState[qi]) return;
+  answeredState[qi] = true;
+  answeredCount++;
+
+  const q = QUIZ[qi];
+  const card = document.getElementById('quiz-' + qi);
+  const feedback = document.getElementById('fb-' + qi);
+  const allOptions = card.querySelectorAll('.option');
+
+  // Disable all
+  allOptions.forEach(o => {
+    o.classList.add('disabled');
+    o.disabled = true;
+  });
+
+  // Mark selected
+  btn.classList.add('selected');
+
+  // Evaluate
+  const isCorrect = (oi === q.correct);
+
+  if (isCorrect) {
+    totalScore += 100;
+    card.classList.add('correct');
+    btn.classList.add('correct');
+    feedback.className = 'feedback ok show';
+    feedback.innerHTML = '✅ ' + q.feedbackOk;
+  } else {
+    card.classList.add('wrong');
+    btn.classList.add('wrong');
+    // Highlight correct
+    allOptions[q.correct].classList.add('correct');
+    feedback.className = 'feedback no show';
+    feedback.innerHTML = '❌ ' + q.feedbackNo;
+  }
+
+  // Update UI
+  scoreDisplay.textContent = totalScore;
+  answeredDisplay.textContent = answeredCount;
+  answeredPill.style.display = 'flex';
+  quizProgress.style.width = (answeredCount / QUIZ.length * 100) + '%';
+
+  // Check if all answered
+  if (answeredCount === QUIZ.length) {
+    showFinal();
+  }
+}
+
+function showFinal() {
+  finalScore.textContent = totalScore;
+  finalResult.classList.add('show');
+
+  if (totalScore === 600) {
+    finalEmoji.textContent = '🏆';
+    finalTitle.textContent = '¡Perfecto, Alyson!';
+    finalMessage.textContent = 'Dominaste todos los matices del coqueteo español. Tu español está listo para la vida real.';
+  } else if (totalScore >= 400) {
+    finalEmoji.textContent = '🔥';
+    finalTitle.textContent = '¡Muy bien!';
+    finalMessage.textContent = 'Tienes una base sólida. Repasa las respuestas incorrectas y vuelve a intentarlo.';
+  } else if (totalScore >= 200) {
+    finalEmoji.textContent = '💪';
+    finalTitle.textContent = '¡Buen intento!';
+    finalMessage.textContent = 'Estás en el camino. Lee los feedbacks con calma y prueba de nuevo.';
+  } else {
+    finalEmoji.textContent = '📚';
+    finalTitle.textContent = '¡A seguir practicando!';
+    finalMessage.textContent = 'Cada error es un paso más hacia la naturalidad. Repasa el vocabulario y vuelve a intentarlo.';
+  }
+
+  finalResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function resetQuiz() {
+  totalScore = 0;
+  answeredCount = 0;
+  answeredState.fill(false);
+  scoreDisplay.textContent = '0';
+  answeredDisplay.textContent = '0';
+  answeredPill.style.display = 'none';
+  quizProgress.style.width = '0%';
+  finalResult.classList.remove('show');
+  renderQuiz();
+}
+
+btnReset.addEventListener('click', resetQuiz);
+
+/* Init */
+renderQuiz();
+</script>
+
+</body>
+</html>
